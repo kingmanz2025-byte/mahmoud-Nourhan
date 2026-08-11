@@ -462,18 +462,29 @@ console.log(
 );
 
 
-/* ================= Guest Wishes & Voice Notes =================
-   Firebase-ready:
-   1) Create a Firebase project.
-   2) Add a Web App.
-   3) Enable Firestore Database + Storage.
-   4) Paste firebaseConfig below.
-   Until configured, written wishes are stored locally in the browser.
+
+
+/* ================= Guest Wishes — Supabase Free =================
+   The website can remain on GitHub Pages.
+   Supabase stores the written wishes centrally so every visitor sees
+   the same messages.
+
+   IMPORTANT:
+   Put ONLY your Supabase Project URL and the public anon key here.
+   Never put a service_role key in this file.
 */
 (() => {
-  const FIREBASE_CONFIG = window.WEDDING_FIREBASE_CONFIG || null;
-  const LOCAL_KEY = "mahmoud_nourhan_guest_wishes_v1";
-  const MAX_RECORDING_MS = 60000;
+  const SUPABASE_URL = window.WEDDING_SUPABASE_URL || "PASTE_SUPABASE_URL_HERE";
+  const SUPABASE_ANON_KEY = window.WEDDING_SUPABASE_ANON_KEY || "PASTE_SUPABASE_ANON_KEY_HERE";
+
+  const hasSupabaseConfig =
+    SUPABASE_URL.startsWith("https://") &&
+    SUPABASE_ANON_KEY &&
+    !SUPABASE_ANON_KEY.includes("PASTE_");
+
+  const client = hasSupabaseConfig && window.supabase
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 
   const $ = (s) => document.querySelector(s);
   const tabs = document.querySelectorAll("[data-wish-tab]");
@@ -485,19 +496,7 @@ console.log(
   const wishesList = $("#wishesList");
   const wishCount = $("#wishCount");
 
-  const voiceName = $("#voiceName");
-  const startBtn = $("#startRecording");
-  const stopBtn = $("#stopRecording");
-  const sendVoiceBtn = $("#sendVoice");
-  const voicePreview = $("#voicePreview");
-  const voiceStatus = $("#voiceStatus");
-  const timer = $("#recordingTimer");
-
-  let mediaRecorder = null;
-  let chunks = [];
-  let voiceBlob = null;
-  let timerInterval = null;
-  let startedAt = 0;
+  const localKey = "mahmoud_nourhan_guest_wishes_v2";
 
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
@@ -509,36 +508,41 @@ console.log(
     });
   });
 
+  // Hide the voice tab/panel because this edition is written wishes only.
+  const voiceTab = document.querySelector('[data-wish-tab="voice"]');
+  const voicePanel = document.querySelector('[data-wish-panel="voice"]');
+  if (voiceTab) voiceTab.style.display = "none";
+  if (voicePanel) voicePanel.style.display = "none";
+
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[ch]));
   }
 
-  function loadLocal() {
-    try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); }
+  function localLoad() {
+    try { return JSON.parse(localStorage.getItem(localKey) || "[]"); }
     catch { return []; }
   }
 
-  function saveLocal(items) {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(items));
+  function localSave(items) {
+    localStorage.setItem(localKey, JSON.stringify(items));
   }
 
   function render(items) {
-    wishCount.textContent = items.length;
-    if (!items.length) {
-      wishesList.innerHTML = '<div class="empty-wishes">لسه أول تهنئة... كن أول من يشارك فرحتنا ❤️</div>';
+    const clean = (items || []).filter(x => x && x.name && x.message);
+    wishCount.textContent = clean.length;
+
+    if (!clean.length) {
+      wishesList.innerHTML =
+        '<div class="empty-wishes">لسه أول تهنئة... كن أول من يشارك فرحتنا ❤️</div>';
       return;
     }
-    wishesList.innerHTML = items.slice().reverse().map(item => {
-      const date = item.createdAt ? new Date(item.createdAt).toLocaleString("ar-EG") : "";
-      if (item.type === "voice") {
-        return `<article class="wish-card voice-card">
-          <div class="wish-author">🎙️ ${escapeHtml(item.name)}</div>
-          <audio controls preload="none" src="${escapeHtml(item.url)}"></audio>
-          <div class="wish-date">${escapeHtml(date)}</div>
-        </article>`;
-      }
+
+    wishesList.innerHTML = clean.map(item => {
+      const date = item.created_at
+        ? new Date(item.created_at).toLocaleString("ar-EG")
+        : "";
       return `<article class="wish-card">
         <div class="wish-author">💌 ${escapeHtml(item.name)}</div>
         <div class="wish-message">${escapeHtml(item.message)}</div>
@@ -547,107 +551,87 @@ console.log(
     }).join("");
   }
 
-  render(loadLocal());
-
-  wishForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const name = wishName.value.trim();
-    const message = wishMessage.value.trim();
-    if (!name || !message) return;
-
-    // Local fallback. Replace this section with Firestore write when configured.
-    const items = loadLocal();
-    items.push({ type:"text", name, message, createdAt: new Date().toISOString() });
-    saveLocal(items);
-    render(items);
-
-    wishForm.reset();
-    wishStatus.textContent = "تم تسجيل تهنئتك ❤️";
-    setTimeout(() => wishStatus.textContent = "", 3000);
-  });
-
-  function setTimer(ms) {
-    const total = Math.floor(ms / 1000);
-    const min = String(Math.floor(total / 60)).padStart(2, "0");
-    const sec = String(total % 60).padStart(2, "0");
-    timer.textContent = `${min}:${sec}`;
-  }
-
-  startBtn?.addEventListener("click", async () => {
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        voiceStatus.textContent = "المتصفح لا يدعم التسجيل الصوتي.";
-        return;
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-      chunks = [];
-      voiceBlob = null;
-      voicePreview.hidden = true;
-      sendVoiceBtn.disabled = true;
-
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      mediaRecorder = new MediaRecorder(stream, { mimeType:mime });
-      startedAt = Date.now();
-      setTimer(0);
-
-      mediaRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(t => t.stop());
-        voiceBlob = new Blob(chunks, { type: mime });
-        voicePreview.src = URL.createObjectURL(voiceBlob);
-        voicePreview.hidden = false;
-        sendVoiceBtn.disabled = false;
-      };
-
-      mediaRecorder.start();
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-      voiceStatus.textContent = "جاري التسجيل...";
-
-      timerInterval = setInterval(() => {
-        const elapsed = Date.now() - startedAt;
-        setTimer(elapsed);
-        if (elapsed >= MAX_RECORDING_MS) stopBtn.click();
-      }, 250);
-    } catch (err) {
-      voiceStatus.textContent = "لم يتم السماح باستخدام الميكروفون.";
-    }
-  });
-
-  stopBtn?.addEventListener("click", () => {
-    if (!mediaRecorder || mediaRecorder.state === "inactive") return;
-    clearInterval(timerInterval);
-    mediaRecorder.stop();
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-    voiceStatus.textContent = "تم تجهيز التسجيل، اسمعه قبل الإرسال.";
-  });
-
-  sendVoiceBtn?.addEventListener("click", () => {
-    const name = voiceName.value.trim();
-    if (!name || !voiceBlob) {
-      voiceStatus.textContent = "اكتب اسمك واختَر تسجيلًا أولًا.";
+  async function loadWishes() {
+    if (!client) {
+      render(localLoad());
+      wishStatus.textContent = "الموقع جاهز للربط بقاعدة البيانات.";
       return;
     }
 
-    // Browser-only fallback: object URLs don't survive refresh.
-    // Firebase Storage is required for permanent public voice notes.
-    const url = URL.createObjectURL(voiceBlob);
-    const items = loadLocal();
-    items.push({ type:"voice", name, url, createdAt:new Date().toISOString() });
-    saveLocal(items);
-    render(items);
+    try {
+      const { data, error } = await client
+        .from("wishes")
+        .select("id,name,message,created_at")
+        .eq("approved", true)
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-    voiceName.value = "";
-    voicePreview.pause();
-    voicePreview.hidden = true;
-    voicePreview.removeAttribute("src");
-    voiceBlob = null;
-    sendVoiceBtn.disabled = true;
-    setTimer(0);
-    voiceStatus.textContent = "تم تسجيل تهنئتك الصوتية ❤️";
-    setTimeout(() => voiceStatus.textContent = "", 3000);
+      if (error) throw error;
+      render(data || []);
+    } catch (error) {
+      console.error("Supabase load error:", error);
+      render(localLoad());
+      wishStatus.textContent = "تعذر تحميل التهاني الآن. جرّب تحديث الصفحة.";
+    }
+  }
+
+  wishForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = wishName.value.trim();
+    const message = wishMessage.value.trim();
+
+    if (!name || !message) {
+      wishStatus.textContent = "اكتب اسمك والتهنئة الأول ❤️";
+      return;
+    }
+
+    if (name.length > 60 || message.length > 500) {
+      wishStatus.textContent = "الاسم أو الرسالة أطول من المسموح.";
+      return;
+    }
+
+    const submit = wishForm.querySelector(".wish-submit");
+    if (submit) submit.disabled = true;
+    wishStatus.textContent = "جاري إرسال تهنئتك... ❤️";
+
+    try {
+      if (!client) {
+        // Local fallback only until Supabase credentials are added.
+        const items = localLoad();
+        items.unshift({
+          name,
+          message,
+          created_at: new Date().toISOString()
+        });
+        localSave(items);
+        render(items);
+      } else {
+        const { error } = await client.from("wishes").insert([{
+          name,
+          message,
+          approved: true
+        }]);
+
+        if (error) throw error;
+        await loadWishes();
+      }
+
+      wishForm.reset();
+      wishStatus.textContent = "تم إرسال تهنئتك وظهرت للجميع ❤️";
+      setTimeout(() => wishStatus.textContent = "", 3500);
+    } catch (error) {
+      console.error("Supabase insert error:", error);
+      wishStatus.textContent = "حصلت مشكلة أثناء الإرسال. حاول مرة ثانية.";
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   });
+
+  // Refresh when the page becomes visible again.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) loadWishes();
+  });
+
+  loadWishes();
 })();
