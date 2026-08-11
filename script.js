@@ -70,6 +70,9 @@ document.body.style.overflow="";
 
 fadeInMusic();
 
+// Let the intro finish disappearing, then begin the slow cinematic scroll.
+setTimeout(() => { startInvitationAutoScroll(); }, 1200);
+
 },900);
 
 });
@@ -577,3 +580,93 @@ console.log(
     if (!document.hidden) loadWishes();
   });
 })();
+
+
+
+
+/*====================================
+  Reading-Speed Auto Scroll
+====================================*/
+let invitationAutoScroll = null;
+let invitationAutoScrolling = false;
+let scrollPauseTimer = null;
+
+function stopInvitationAutoScroll(){
+  if(invitationAutoScroll){
+    cancelAnimationFrame(invitationAutoScroll);
+    invitationAutoScroll = null;
+  }
+  if(scrollPauseTimer){
+    clearTimeout(scrollPauseTimer);
+    scrollPauseTimer = null;
+  }
+  invitationAutoScrolling = false;
+}
+
+function startInvitationAutoScroll(){
+  const target = document.getElementById("guest-wishes");
+  if(!target) return;
+
+  const startY = window.scrollY || document.documentElement.scrollTop || 0;
+  const targetY = Math.max(
+    0,
+    target.getBoundingClientRect().top + window.scrollY - 12
+  );
+  const distance = targetY - startY;
+
+  if(distance < 30) return;
+
+  invitationAutoScrolling = true;
+
+  /*
+    Reading pace:
+    ~15 pixels/second = deliberately slow, so the guest can actually
+    read the sections while the page moves.
+  */
+  const pixelsPerSecond = 35;
+  const duration = Math.max(18000, (distance / pixelsPerSecond) * 1000);
+  const startTime = performance.now();
+
+  // Very gentle start, then almost linear movement.
+  function easeReading(t){
+    if(t < 0.08){
+      const x = t / 0.08;
+      return 0.5 * x * x * 0.08;
+    }
+    if(t > 0.92){
+      const x = (t - 0.92) / 0.08;
+      return 0.92 + (x - 0.5) * 0.08;
+    }
+    return t;
+  }
+
+  function frame(now){
+    if(!invitationAutoScrolling) return;
+
+    const progress = Math.min(1, (now - startTime) / duration);
+    window.scrollTo(0, startY + distance * easeReading(progress));
+
+    if(progress < 1){
+      invitationAutoScroll = requestAnimationFrame(frame);
+    }else{
+      invitationAutoScrolling = false;
+      invitationAutoScroll = null;
+      window.scrollTo(0, targetY);
+    }
+  }
+
+  invitationAutoScroll = requestAnimationFrame(frame);
+}
+
+// Any manual interaction gives the guest full control.
+window.addEventListener("wheel", stopInvitationAutoScroll, {passive:true});
+window.addEventListener("touchmove", stopInvitationAutoScroll, {passive:true});
+window.addEventListener("pointerdown", (event)=>{
+  // Don't cancel when clicking the designer CTA itself.
+  if(event.target.closest(".designer-cta")) return;
+  stopInvitationAutoScroll();
+}, {passive:true});
+window.addEventListener("keydown", (event)=>{
+  const keys = ["ArrowDown","ArrowUp","PageDown","PageUp","Home","End"," "];
+  if(keys.includes(event.key)) stopInvitationAutoScroll();
+}, {passive:true});

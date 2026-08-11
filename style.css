@@ -2714,3 +2714,67 @@ html,body{width:100%;max-width:100%;overflow-x:hidden;}
     min-width:0;
   }
 }
+
+
+
+
+/*==================================
+  Elegant Designer CTA
+==================================*/
+.designer-cta{
+  position:fixed;
+  left:50%;
+  bottom:16px;
+  transform:translateX(-50%);
+  z-index:9998;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 18px;
+  border:1px solid rgba(220,184,95,.55);
+  border-radius:999px;
+  background:rgba(18,15,10,.74);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  color:#e8c978;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.02em;
+  box-shadow:
+    0 7px 24px rgba(0,0,0,.28),
+    0 0 20px rgba(220,184,95,.08);
+  transition:all .28s ease;
+  white-space:nowrap;
+}
+.designer-cta:hover{
+  transform:translateX(-50%) translateY(-3px);
+  color:#1c1408;
+  background:linear-gradient(135deg,#f4d997,#c7963d);
+  border-color:#f0d28b;
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.32),
+    0 0 25px rgba(220,184,95,.18);
+}
+.designer-cta-icon{
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(222,184,96,.13);
+  color:#f1d38a;
+  font-size:12px;
+}
+.designer-cta:hover .designer-cta-icon{
+  background:rgba(28,20,8,.12);
+  color:#1c1408;
+}
+@media(max-width:600px){
+  .designer-cta{
+    bottom:10px;
+    padding:8px 15px;
+    font-size:11px;
+  }
+  .designer-cta-icon{width:18px;height:18px}
+}
