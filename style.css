@@ -2778,3 +2778,22 @@ html,body{width:100%;max-width:100%;overflow-x:hidden;}
   }
   .designer-cta-icon{width:18px;height:18px}
 }
+/* Wedding Calendar داخل الانترو */
+.intro-calendar {
+    display: block;
+    width: min(260px, 70vw);
+    max-height: 270px;
+    object-fit: contain;
+    margin: 12px auto 18px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+/* موبايل */
+@media (max-width: 600px) {
+    .intro-calendar {
+        width: min(230px, 68vw);
+        max-height: 240px;
+        margin: 10px auto 15px;
+    }
+}
