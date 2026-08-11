@@ -397,51 +397,27 @@ href="https://wa.me/201021815764?text=االسلام عليكم، ألف مبر�
   <div class="guest-wishes-container">
     <div class="section-heading">
       <span class="section-kicker">OUR GUESTBOOK</span>
-      <h2>اترك تهنئتك للعروسين</h2>
-      <p>كلماتكم الجميلة ورسائلكم الصوتية هتفضل ذكرى غالية عندنا ❤️</p>
-    </div>
-
-    <div class="wish-tabs" role="tablist" aria-label="Guest messages">
-      <button class="wish-tab active" type="button" data-wish-tab="text">💌 تهنئة مكتوبة</button>
-      <button class="wish-tab" type="button" data-wish-tab="voice">🎙️ تهنئة صوتية</button>
+      <h2>ابعت تهنئتك ❤️</h2>
+      <p>اترك كلمة جميلة للعروسين، لتبقى ذكرى من أجمل أيامنا.</p>
     </div>
 
     <div class="wish-panel active" data-wish-panel="text">
       <form id="wishForm" class="wish-form" autocomplete="off">
-        <div class="wish-grid">
-          <label>
+        <div class="wish-fields">
+          <label class="wish-field">
             <span>اسمك</span>
             <input id="wishName" name="name" type="text" maxlength="60" placeholder="اكتب اسمك" required>
           </label>
-          <label>
-            <span>رسالتك</span>
+
+          <label class="wish-field">
+            <span>تهنئتك</span>
             <textarea id="wishMessage" name="message" maxlength="500" rows="5" placeholder="اكتب تهنئتك للعروسين..." required></textarea>
           </label>
         </div>
+
         <button class="wish-submit" type="submit">إرسال التهنئة ❤️</button>
         <p id="wishStatus" class="wish-status" aria-live="polite"></p>
       </form>
-    </div>
-
-    <div class="wish-panel" data-wish-panel="voice">
-      <div class="voice-recorder">
-        <label>
-          <span>اسمك</span>
-          <input id="voiceName" type="text" maxlength="60" placeholder="اكتب اسمك" required>
-        </label>
-
-        <div class="recorder-controls">
-          <button id="startRecording" class="record-btn" type="button">🎙️ ابدأ التسجيل</button>
-          <button id="stopRecording" class="record-btn secondary" type="button" disabled>⏹ إيقاف</button>
-        </div>
-
-        <div class="recording-timer" id="recordingTimer">00:00</div>
-        <audio id="voicePreview" controls hidden></audio>
-
-        <button id="sendVoice" class="wish-submit" type="button" disabled>إرسال التهنئة الصوتية 🎙️</button>
-        <p id="voiceStatus" class="wish-status" aria-live="polite"></p>
-        <small class="voice-note">يُفضّل ألا تتجاوز الرسالة الصوتية 60 ثانية.</small>
-      </div>
     </div>
 
     <div class="wishes-list-wrap">
@@ -485,7 +461,9 @@ Mohamed Tarek
 
 <p>
 
-أطلب تصميمـــك دلوقتــــي
+Luxury Wedding Invitation Designer
+
+Modern Websites • Digital Invitations • 
 </p>
 
 <a

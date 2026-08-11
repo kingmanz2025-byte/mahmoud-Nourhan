@@ -464,31 +464,18 @@ console.log(
 
 
 
-/* ================= Guest Wishes — Supabase Free =================
-   The website can remain on GitHub Pages.
-   Supabase stores the written wishes centrally so every visitor sees
-   the same messages.
 
-   IMPORTANT:
-   Put ONLY your Supabase Project URL and the public anon key here.
-   Never put a service_role key in this file.
-*/
+/* ================= Guest Wishes — Supabase Live ================= */
 (() => {
-  const SUPABASE_URL = window.WEDDING_SUPABASE_URL || "PASTE_SUPABASE_URL_HERE";
-  const SUPABASE_ANON_KEY = window.WEDDING_SUPABASE_ANON_KEY || "PASTE_SUPABASE_ANON_KEY_HERE";
+  const SUPABASE_URL = "https://ymaxtvvccwdflfhrbbew.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ROMszCkQklyY2HlEaEvZxw_XIxvdhJW";
 
-  const hasSupabaseConfig =
-    SUPABASE_URL.startsWith("https://") &&
-    SUPABASE_ANON_KEY &&
-    !SUPABASE_ANON_KEY.includes("PASTE_");
-
-  const client = hasSupabaseConfig && window.supabase
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    : null;
+  const client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
 
   const $ = (s) => document.querySelector(s);
-  const tabs = document.querySelectorAll("[data-wish-tab]");
-  const panels = document.querySelectorAll("[data-wish-panel]");
   const wishForm = $("#wishForm");
   const wishName = $("#wishName");
   const wishMessage = $("#wishMessage");
@@ -496,37 +483,10 @@ console.log(
   const wishesList = $("#wishesList");
   const wishCount = $("#wishCount");
 
-  const localKey = "mahmoud_nourhan_guest_wishes_v2";
-
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      panels.forEach(p => p.classList.remove("active"));
-      tab.classList.add("active");
-      const panel = document.querySelector(`[data-wish-panel="${tab.dataset.wishTab}"]`);
-      if (panel) panel.classList.add("active");
-    });
-  });
-
-  // Hide the voice tab/panel because this edition is written wishes only.
-  const voiceTab = document.querySelector('[data-wish-tab="voice"]');
-  const voicePanel = document.querySelector('[data-wish-panel="voice"]');
-  if (voiceTab) voiceTab.style.display = "none";
-  if (voicePanel) voicePanel.style.display = "none";
-
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
     }[ch]));
-  }
-
-  function localLoad() {
-    try { return JSON.parse(localStorage.getItem(localKey) || "[]"); }
-    catch { return []; }
-  }
-
-  function localSave(items) {
-    localStorage.setItem(localKey, JSON.stringify(items));
   }
 
   function render(items) {
@@ -541,8 +501,11 @@ console.log(
 
     wishesList.innerHTML = clean.map(item => {
       const date = item.created_at
-        ? new Date(item.created_at).toLocaleString("ar-EG")
+        ? new Date(item.created_at).toLocaleDateString("ar-EG", {
+            year:"numeric", month:"long", day:"numeric"
+          })
         : "";
+
       return `<article class="wish-card">
         <div class="wish-author">💌 ${escapeHtml(item.name)}</div>
         <div class="wish-message">${escapeHtml(item.message)}</div>
@@ -552,12 +515,6 @@ console.log(
   }
 
   async function loadWishes() {
-    if (!client) {
-      render(localLoad());
-      wishStatus.textContent = "الموقع جاهز للربط بقاعدة البيانات.";
-      return;
-    }
-
     try {
       const { data, error } = await client
         .from("wishes")
@@ -570,8 +527,7 @@ console.log(
       render(data || []);
     } catch (error) {
       console.error("Supabase load error:", error);
-      render(localLoad());
-      wishStatus.textContent = "تعذر تحميل التهاني الآن. جرّب تحديث الصفحة.";
+      wishStatus.textContent = "تعذر تحميل التهاني الآن. حاول تحديث الصفحة.";
     }
   }
 
@@ -582,12 +538,12 @@ console.log(
     const message = wishMessage.value.trim();
 
     if (!name || !message) {
-      wishStatus.textContent = "اكتب اسمك والتهنئة الأول ❤️";
+      wishStatus.textContent = "اكتب اسمك وتهنئتك الأول ❤️";
       return;
     }
 
     if (name.length > 60 || message.length > 500) {
-      wishStatus.textContent = "الاسم أو الرسالة أطول من المسموح.";
+      wishStatus.textContent = "الاسم أو التهنئة أطول من المسموح.";
       return;
     }
 
@@ -596,28 +552,16 @@ console.log(
     wishStatus.textContent = "جاري إرسال تهنئتك... ❤️";
 
     try {
-      if (!client) {
-        // Local fallback only until Supabase credentials are added.
-        const items = localLoad();
-        items.unshift({
-          name,
-          message,
-          created_at: new Date().toISOString()
-        });
-        localSave(items);
-        render(items);
-      } else {
-        const { error } = await client.from("wishes").insert([{
-          name,
-          message,
-          approved: true
-        }]);
+      const { error } = await client.from("wishes").insert([{
+        name,
+        message,
+        approved: true
+      }]);
 
-        if (error) throw error;
-        await loadWishes();
-      }
+      if (error) throw error;
 
       wishForm.reset();
+      await loadWishes();
       wishStatus.textContent = "تم إرسال تهنئتك وظهرت للجميع ❤️";
       setTimeout(() => wishStatus.textContent = "", 3500);
     } catch (error) {
@@ -628,10 +572,8 @@ console.log(
     }
   });
 
-  // Refresh when the page becomes visible again.
+  loadWishes();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) loadWishes();
   });
-
-  loadWishes();
 })();

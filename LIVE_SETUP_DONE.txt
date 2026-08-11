@@ -1,0 +1,10 @@
+Supabase connection configured.
+
+Project URL:
+https://ymaxtvvccwdflfhrbbew.supabase.co
+
+The website uses the public Publishable key in script.js.
+Do NOT add a service_role/secret key to the website.
+RLS policies required:
+- Anyone can read wishes (SELECT)
+- Anyone can submit wishes (INSERT)

@@ -2682,3 +2682,35 @@ html,body{width:100%;max-width:100%;overflow-x:hidden;}
   }
   #guest-wishes.guest-wishes-section::before{inset:7px;border-radius:18px}
 }
+
+/* ===== Final Guestbook Layout Polish ===== */
+#guest-wishes .wish-fields{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+#guest-wishes .wish-field{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+#guest-wishes .wish-field > span{
+  text-align:right;
+  color:#f0d99e;
+  font-weight:700;
+}
+#guest-wishes .wish-submit{
+  display:block;
+  margin:22px auto 0;
+  min-width:220px;
+}
+#guest-wishes .wish-form{
+  max-width:760px;
+  margin:0 auto;
+}
+@media(max-width:700px){
+  #guest-wishes .wish-submit{
+    width:100%;
+    min-width:0;
+  }
+}
