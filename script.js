@@ -659,14 +659,55 @@ function startInvitationAutoScroll(){
 }
 
 // Any manual interaction gives the guest full control.
-window.addEventListener("wheel", stopInvitationAutoScroll, {passive:true});
-window.addEventListener("touchmove", stopInvitationAutoScroll, {passive:true});
-window.addEventListener("pointerdown", (event)=>{
-  // Don't cancel when clicking the designer CTA itself.
-  if(event.target.closest(".designer-cta")) return;
-  stopInvitationAutoScroll();
+let userTouching = false;
+let resumeScrollTimer = null;
+
+function pauseAndResumeAutoScroll() {
+  if (!invitationAutoScrolling) return;
+
+  invitationAutoScrolling = false;
+
+  if (invitationAutoScroll) {
+    cancelAnimationFrame(invitationAutoScroll);
+    invitationAutoScroll = null;
+  }
+
+  clearTimeout(resumeScrollTimer);
+
+  resumeScrollTimer = setTimeout(() => {
+    startInvitationAutoScroll();
+  }, 600);
+}
+
+/* الموبايل */
+window.addEventListener("touchstart", () => {
+  userTouching = true;
+
+  if (invitationAutoScrolling) {
+    invitationAutoScrolling = false;
+
+    if (invitationAutoScroll) {
+      cancelAnimationFrame(invitationAutoScroll);
+      invitationAutoScroll = null;
+    }
+  }
 }, {passive:true});
-window.addEventListener("keydown", (event)=>{
-  const keys = ["ArrowDown","ArrowUp","PageDown","PageUp","Home","End"," "];
-  if(keys.includes(event.key)) stopInvitationAutoScroll();
+
+window.addEventListener("touchend", () => {
+  userTouching = false;
+
+  clearTimeout(resumeScrollTimer);
+
+  resumeScrollTimer = setTimeout(() => {
+    if (!userTouching) {
+      startInvitationAutoScroll();
+    }
+  }, 700);
+}, {passive:true});
+
+/* الكمبيوتر */
+window.addEventListener("wheel", () => {
+  if (invitationAutoScrolling) {
+    pauseAndResumeAutoScroll();
+  }
 }, {passive:true});
