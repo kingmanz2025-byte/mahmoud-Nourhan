@@ -623,7 +623,7 @@ function startInvitationAutoScroll(){
     ~15 pixels/second = deliberately slow, so the guest can actually
     read the sections while the page moves.
   */
-  const pixelsPerSecond = 35;
+  const pixelsPerSecond = 55;
   const duration = Math.max(18000, (distance / pixelsPerSecond) * 1000);
   const startTime = performance.now();
 
